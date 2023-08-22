@@ -1,6 +1,6 @@
 test-counter:
 	cd aurora && \
-	yarn && \
+	yarn add @auroraisnear/aurora-sdk && \
 	cd ../near/contracts && \
 	./build.sh && \
 	cd ../../aurora/integration-tests && \

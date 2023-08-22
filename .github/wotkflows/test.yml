@@ -1,9 +1,6 @@
 name: aurora-to-near-xcc-example test automatically
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test-counter:

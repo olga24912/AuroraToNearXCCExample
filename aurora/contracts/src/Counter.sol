@@ -4,7 +4,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AuroraSdk, NEAR, PromiseCreateArgs} from "@auroraisnear/aurora-sdk/aurora-sdk/AuroraSdk.sol";
 
 contract Counter {
-    using AuroraSdk for NEAR;    
+    using AuroraSdk for NEAR;  
+    using AuroraSdk for PromiseCreateArgs;  
 
     uint64 constant COUNTER_NEAR_GAS = 10_000_000_000_000;
     

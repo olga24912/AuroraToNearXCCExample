@@ -1,10 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use aurora_sdk_integration_tests::{aurora_engine_sdk::types::near_account_to_evm_address, tokio, workspaces, {utils::process}, aurora_engine, wnear};
+    use aurora_sdk_integration_tests::{aurora_engine_sdk::types::near_account_to_evm_address, tokio, workspaces, {utils::process}, aurora_engine, wnear, ethabi};
     use std::path::Path;
     use aurora_sdk_integration_tests::aurora_engine::AuroraEngine;
     use aurora_sdk_integration_tests::aurora_engine_types::types::Address;
     use aurora_sdk_integration_tests::utils::forge;
+    use aurora_sdk_integration_tests::utils::ethabi::DeployedContract;
     use aurora_sdk_integration_tests::workspaces::Contract;
 
     #[tokio::test]
@@ -16,7 +17,7 @@ mod tests {
         let wnear = wnear::Wnear::deploy(&worker, &engine).await.unwrap();
 
         let user_account = worker.dev_create_account().await.unwrap();
-        let aurora_counter = deploy_aurora_counter(&engine, &user_account, wnear.aurora_token.address, &near_counter);
+        let aurora_counter = deploy_aurora_counter(&engine, &user_account, wnear.aurora_token.address, &near_counter).await;
 
         //let user_address = near_account_to_evm_address(user_account.id().as_bytes());
     }
@@ -43,10 +44,10 @@ mod tests {
     async fn deploy_aurora_counter(engine: &AuroraEngine,
                                    user_account: &workspaces::Account,
                                    wnear_address: Address,
-                                   near_fast_bridge: &Contract) {
+                                   near_counter: &Contract) -> DeployedContract {
         let contract_path = "../contracts";
 
-        let aurora_sdk_path = Path::new("./aurora-contracts-sdk/aurora-solidity-sdk");
+        let aurora_sdk_path = Path::new("../contracts/lib/aurora-contracts-sdk/aurora-solidity-sdk");
         let codec_lib = forge::deploy_codec_lib(&aurora_sdk_path, engine)
             .await
             .unwrap();
@@ -73,33 +74,16 @@ mod tests {
             ],
         ).await.unwrap();
 
-        /*let deploy_bytes = constructor.create_deploy_bytes_without_constructor();
+        let deploy_bytes = constructor.create_deploy_bytes_with_args(&[
+            ethabi::Token::Address(wnear_address.raw()),
+            ethabi::Token::String(near_counter.id().to_string()),
+        ]);
 
         let address = engine
             .deploy_evm_contract_with(user_account, deploy_bytes)
             .await
             .unwrap();
 
-        let aurora_fast_bridge_impl = constructor.deployed_at(address);
-
-        let contract_args = aurora_fast_bridge_impl.create_call_method_bytes_with_args(
-            "initialize",
-            &[
-                ethabi::Token::Address(wnear_address.raw()),
-                ethabi::Token::String(near_fast_bridge.id().to_string()),
-                ethabi::Token::String(engine.inner.id().to_string()),
-                ethabi::Token::Bool(false),
-            ],
-        );
-
-        call_aurora_contract(
-            aurora_fast_bridge_impl.address,
-            contract_args,
-            &user_account,
-            engine.inner.id(),
-            true,
-        ).await.unwrap();
-
-        return aurora_fast_bridge_impl;*/
+        constructor.deployed_at(address)
     }
 }

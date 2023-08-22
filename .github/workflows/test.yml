@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   test-counter:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     name: Test counter
     steps:
       - name: Install Foundry

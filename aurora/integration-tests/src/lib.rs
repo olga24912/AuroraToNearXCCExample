@@ -3,7 +3,8 @@ mod tests {
     use aurora_sdk_integration_tests::{aurora_engine_sdk::types::near_account_to_evm_address, tokio, workspaces, {utils::process}, aurora_engine, wnear, ethabi};
     use std::path::Path;
     use aurora_sdk_integration_tests::aurora_engine::AuroraEngine;
-    use aurora_sdk_integration_tests::aurora_engine_types::types::Address;
+    use aurora_sdk_integration_tests::aurora_engine_types::types::{Address, Wei};
+    use aurora_sdk_integration_tests::aurora_engine_types::U256;
     use aurora_sdk_integration_tests::utils::forge;
     use aurora_sdk_integration_tests::utils::ethabi::DeployedContract;
     use aurora_sdk_integration_tests::workspaces::Contract;
@@ -19,7 +20,20 @@ mod tests {
         let user_account = worker.dev_create_account().await.unwrap();
         let aurora_counter = deploy_aurora_counter(&engine, &user_account, wnear.aurora_token.address, &near_counter).await;
 
-        //let user_address = near_account_to_evm_address(user_account.id().as_bytes());
+        let user_address = near_account_to_evm_address(user_account.id().as_bytes());
+        const NEAR_DEPOSIT: u128 = 2 * near_sdk::ONE_NEAR;
+
+        engine.mint_wnear(&wnear, user_address, NEAR_DEPOSIT).await.unwrap();
+
+        let evm_call_args = wnear.aurora_token.create_approve_call_bytes(aurora_counter.address, U256::MAX);
+        let result = engine
+            .call_evm_contract_with(
+                &user_account,
+                wnear.aurora_token.address,
+                evm_call_args,
+                Wei::zero(),
+            ).await.unwrap();
+        aurora_engine::unwrap_success(result.status).unwrap();
     }
 
     async fn deploy_near_counter(worker: &workspaces::Worker<workspaces::network::Sandbox>) -> Contract {

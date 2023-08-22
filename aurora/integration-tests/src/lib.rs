@@ -3,6 +3,7 @@ mod tests {
     use aurora_sdk_integration_tests::{aurora_engine_sdk::types::near_account_to_evm_address, tokio, workspaces, {utils::process}, aurora_engine, wnear, ethabi};
     use std::path::Path;
     use aurora_sdk_integration_tests::aurora_engine::AuroraEngine;
+    use aurora_sdk_integration_tests::aurora_engine_types::parameters::engine::{CallArgs, FunctionCallArgsV1};
     use aurora_sdk_integration_tests::aurora_engine_types::types::{Address, Wei};
     use aurora_sdk_integration_tests::aurora_engine_types::U256;
     use aurora_sdk_integration_tests::utils::forge;
@@ -21,7 +22,7 @@ mod tests {
         let aurora_counter = deploy_aurora_counter(&engine, &user_account, wnear.aurora_token.address, &near_counter).await;
 
         let user_address = near_account_to_evm_address(user_account.id().as_bytes());
-        const NEAR_DEPOSIT: u128 = 2 * near_sdk::ONE_NEAR;
+        const NEAR_DEPOSIT: u128 =  2 * near_sdk::ONE_NEAR;
 
         engine.mint_wnear(&wnear, user_address, NEAR_DEPOSIT).await.unwrap();
 
@@ -34,6 +35,11 @@ mod tests {
                 Wei::zero(),
             ).await.unwrap();
         aurora_engine::unwrap_success(result.status).unwrap();
+
+        increment(&engine, &user_account, aurora_counter).await;
+
+        let counter_val: u64 = near_counter.view("get_num").await.unwrap().json().unwrap();
+        assert_eq!(counter_val, 1);
     }
 
     async fn deploy_near_counter(worker: &workspaces::Worker<workspaces::network::Sandbox>) -> Contract {
@@ -51,6 +57,9 @@ mod tests {
             contract_path.join("target/wasm32-unknown-unknown/release/counter.wasm");
         let wasm_bytes = tokio::fs::read(artifact_path).await.unwrap();
         let near_counter = worker.dev_deploy(&wasm_bytes).await.unwrap();
+
+        near_counter.call("new")
+            .transact().await.unwrap().into_result().unwrap();
 
         near_counter
     }
@@ -99,5 +108,33 @@ mod tests {
             .unwrap();
 
         constructor.deployed_at(address)
+    }
+
+    async fn increment(
+        engine: &AuroraEngine,
+        user_account: &workspaces::Account,
+        aurora_counter: DeployedContract) {
+        let contract_args = aurora_counter.create_call_method_bytes_without_args(
+            "incrementXCC"
+        );
+
+        let call_args = CallArgs::V1(FunctionCallArgsV1 {
+            contract: aurora_counter.address,
+            input: contract_args,
+        });
+
+        let outcome = user_account
+            .call(engine.inner.id(), "call")
+            .args_borsh(call_args)
+            .max_gas()
+            .transact()
+            .await
+            .unwrap();
+
+        assert!(
+                outcome.failures().is_empty(),
+                "Call to set failed: {:?}",
+                outcome.failures()
+            );
     }
 }

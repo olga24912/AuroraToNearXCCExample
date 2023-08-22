@@ -18,10 +18,11 @@ contract Counter {
     }
 
     function incrementXCC() external {
+        bytes memory args = bytes('{"value": 1}');
         PromiseCreateArgs memory callCounter = near.call(
             counterAccountId,
             "increment",
-            "",
+            args,
             0,
             COUNTER_NEAR_GAS
         );

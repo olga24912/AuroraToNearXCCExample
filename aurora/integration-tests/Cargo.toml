@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 aurora-sdk-integration-tests = { git = "https://github.com/aurora-is-near/aurora-contracts-sdk.git" }
 near-sdk = "4.1.1"
+serde_json = "*"

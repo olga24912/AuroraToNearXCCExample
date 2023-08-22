@@ -1,23 +1,26 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen};
-
+use near_sdk::{near_bindgen, PanicOnDefault};
 
 #[near_bindgen]
-#[derive(Default, BorshDeserialize, BorshSerialize)]
+#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
 pub struct Counter {
-    val: i8,
+    val: u64,
 }
 
 #[near_bindgen]
 impl Counter {
-    // Public read-only method: Returns the counter value.
-    pub fn get_num(&self) -> i8 {
+    #[init]
+    pub fn new() -> Self {
+        Self{
+            val: 0
+        }
+    }
+
+    pub fn get_num(&self) -> u64 {
         return self.val;
     }
 
-    // Public method: Increment the counter.
-    pub fn increment(&mut self) {
-        self.val += 1;
-        log!("Increased number to {}", self.val);
+    pub fn increment(&mut self, value: u64) {
+        self.val += value;
     }
 }

@@ -1,9 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use aurora_sdk_integration_tests::aurora_engine::AuroraEngine;
-    use aurora_sdk_integration_tests::aurora_engine_types::parameters::engine::{
-        CallArgs, FunctionCallArgsV1,
-    };
+    use aurora_sdk_integration_tests::aurora_engine::{AuroraEngine, ContractInput};
     use aurora_sdk_integration_tests::aurora_engine_types::types::{Address, Wei};
     use aurora_sdk_integration_tests::aurora_engine_types::U256;
     use aurora_sdk_integration_tests::utils::ethabi::DeployedContract;
@@ -141,23 +138,16 @@ mod tests {
     ) {
         let contract_args = aurora_counter.create_call_method_bytes_without_args("incrementXCC");
 
-        let call_args = CallArgs::V1(FunctionCallArgsV1 {
-            contract: aurora_counter.address,
-            input: contract_args,
-        });
-
-        let outcome = user_account
-            .call(engine.inner.id(), "call")
-            .args_borsh(call_args)
-            .max_gas()
-            .transact()
+        let result = engine
+            .call_evm_contract_with(
+                &user_account,
+                aurora_counter.address,
+                ContractInput(contract_args),
+                Wei::zero(),
+            )
             .await
             .unwrap();
 
-        assert!(
-            outcome.failures().is_empty(),
-            "Call to set failed: {:?}",
-            outcome.failures()
-        );
+        aurora_engine::unwrap_success(result.status).unwrap();
     }
 }
